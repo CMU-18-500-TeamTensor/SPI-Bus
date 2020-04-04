@@ -1,6 +1,6 @@
 `default_nettype none
 
-module SPI_slave_full (
+module SPI_slave (
   input  logic rst_L,
   input  logic sclk, ss, mosi,
   input  logic [7:0] outbuf,
@@ -22,7 +22,7 @@ always_ff @(posedge sclk, negedge rst_L)
   end else begin
     sendrecv <= 1'b0;
     if (~ss) begin
-      count <= count + 1;
+      count <= count + 3'b001;
       buffer <= {buffer[6:0], mosi};
       if (count == 3'b111) begin
         sendrecv <= 1'b1;
@@ -34,4 +34,4 @@ always_ff @(posedge sclk, negedge rst_L)
     end
   end
   
-endmodule : SPI_slave_full
+endmodule : SPI_slave
