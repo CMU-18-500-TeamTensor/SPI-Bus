@@ -1,39 +1,55 @@
 `default_nettype none
 
 module ChipInterface (
-	input  logic GPIO_014, GPIO_017, GPIO_018, GPIO_019,
-	output logic GPIO_016, 
-	output logic [7:0] LED);
+	input  logic CLOCK_50, GPIO_028, GPIO_031, GPIO_032, GPIO_033,
+	input  logic [7:0] byte_send,
+	input  logic write,
+	output logic clk, rst_L,
+	output logic valid, busy,
+	output logic [7:0] byte_recv,
+	output logic GPIO_030);
 
-	logic [7:0] buffer;
-	logic rst_L;
 	logic sendrecv;
-	
 	logic sclk, ss, miso, mosi;
+	logic spll, locked;
 	
-	logic ss_show;
-	always_ff @(posedge sclk, negedge rst_L)
+	assign clk = CLOCK_50;
+	assign rst_L = GPIO_031;
+	assign ss = GPIO_033;
+	assign sclk = GPIO_032;
+	assign mosi = GPIO_028;
+	assign GPIO_030 = miso;
+						  
+	logic [7:0] buffer;
+	logic [7:0] buffer_in, buffer_out;
+	
+	SPI_async spi(.clk(spll),
+					  .rst_L, .sclk, .ss, .mosi,
+					  .buffer_out, .sendrecv, .buffer_in,
+					  .miso);
+	
+	spi_to_fpga recv(.clk, .sclk(spll), .rst_L,
+						  .buffer_in, .sendrecv,
+						  .valid, .buffer_out(byte_recv));
+	
+	fpga_to_spi send(.clk, .sclk(spll), .rst_L,
+						  .buffer_in(byte_send),
+						  .sendrecv, 
+						  .write, .busy,
+						  .buffer_out(buffer));
+	
+	sclk_pll spi_pll(.areset(~rst_L),
+						  .inclk0(CLOCK_50),
+						  .c0(spll),
+						  .locked(locked));
+						  
+	always @(posedge spll, negedge rst_L)
 		if (~rst_L) begin
-			ss_show <= 0;
+			buffer_out <= 0;
 		end else begin
-			if (ss)
-				ss_show <= 1'b1;
+			if (sendrecv)
+				buffer_out <= buffer_in;
 		end
-	
-	assign rst_L = GPIO_017;
-	assign ss = GPIO_019;
-	assign sclk = GPIO_018;
-	assign mosi = GPIO_014;
-	assign GPIO_016 = miso;
-	
-	assign LED = {ss_show, ss, buffer[2:0], miso, mosi, rst_L};
-	
-	
-	SPI_slave spi(.rst_L, .sclk, .ss, .mosi,
-	              .outbuf(buffer),
-				     .sendrecv, 
-				     .buffer_in(buffer),
-				     .miso);
 	
 
 endmodule : ChipInterface
