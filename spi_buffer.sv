@@ -88,8 +88,8 @@ module fpga_to_spi (
 			if (busy_delay)
 				busy_ack <= 1'b1;
 			if (fin_ack) begin
-				busy_delay <= 1'b1;
-				busy_ack <= 1'b1;
+				busy_delay <= 1'b0;
+				busy_ack <= 1'b0;
 			end
 		end
 	

@@ -115,6 +115,13 @@ https://fpgasoftware.intel.com/eula.
 		(text "GPIO_030" (rect 161 107 203 119)(font "Arial" ))
 		(line (pt 224 112)(pt 208 112)(line_width 1))
 	)
+	(port
+		(pt 224 128)
+		(output)
+		(text "LED[7..0]" (rect 0 0 40 12)(font "Arial" ))
+		(text "LED[7..0]" (rect 163 123 203 135)(font "Arial" ))
+		(line (pt 224 128)(pt 208 128)(line_width 3))
+	)
 	(drawing
 		(rectangle (rect 16 16 208 160)(line_width 1))
 	)

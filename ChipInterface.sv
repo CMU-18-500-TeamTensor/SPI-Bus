@@ -7,7 +7,8 @@ module ChipInterface (
 	output logic clk, rst_L,
 	output logic valid, busy,
 	output logic [7:0] byte_recv,
-	output logic GPIO_030);
+	output logic GPIO_030,
+	output logic [7:0] LED);
 
 	logic sendrecv;
 	logic sclk, ss, miso, mosi;
@@ -20,8 +21,9 @@ module ChipInterface (
 	assign mosi = GPIO_028;
 	assign GPIO_030 = miso;
 						  
-	logic [7:0] buffer;
 	logic [7:0] buffer_in, buffer_out;
+	
+	assign LED = byte_recv;
 	
 	SPI_async spi(.clk(spll),
 					  .rst_L, .sclk, .ss, .mosi,
@@ -36,13 +38,14 @@ module ChipInterface (
 						  .buffer_in(byte_send),
 						  .sendrecv, 
 						  .write, .busy,
-						  .buffer_out(buffer));
+						  .buffer_out);
 	
 	sclk_pll spi_pll(.areset(~rst_L),
 						  .inclk0(CLOCK_50),
 						  .c0(spll),
 						  .locked(locked));
 						  
+	/*					  
 	always @(posedge spll, negedge rst_L)
 		if (~rst_L) begin
 			buffer_out <= 0;
@@ -50,6 +53,6 @@ module ChipInterface (
 			if (sendrecv)
 				buffer_out <= buffer_in;
 		end
-	
+	*/
 
 endmodule : ChipInterface

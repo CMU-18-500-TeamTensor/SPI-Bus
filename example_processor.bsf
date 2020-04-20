@@ -73,6 +73,13 @@ https://fpgasoftware.intel.com/eula.
 		(text "byte_send[7..0]" (rect 141 43 203 55)(font "Arial" ))
 		(line (pt 224 48)(pt 208 48)(line_width 3))
 	)
+	(port
+		(pt 224 64)
+		(output)
+		(text "LED[7..0]" (rect 0 0 40 12)(font "Arial" ))
+		(text "LED[7..0]" (rect 163 59 203 71)(font "Arial" ))
+		(line (pt 224 64)(pt 208 64)(line_width 3))
+	)
 	(drawing
 		(rectangle (rect 16 16 208 128)(line_width 1))
 	)
