@@ -15,7 +15,6 @@ logic [7:0] buffer;
 
 assign trigger = (sclk_last[2:1] == 2'b01);
 
-
 assign miso = buffer[count];
 
 always_ff @(posedge clk, negedge rst_L)
