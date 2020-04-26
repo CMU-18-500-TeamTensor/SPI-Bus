@@ -18,7 +18,7 @@ module example_commands (
 	always_comb begin
 		case (state)
 			WAIT: nextState = (cmd_ready) ? IN : WAIT;
-			IN: nextState = (cmd_in.done && index == cmd_in.region_end) ? OUT : IN;
+			IN: nextState = (index == cmd_in.region_end) ? OUT : IN;
 			OUT: nextState = (cmd_done) ? WAIT : OUT;
 			default: nextState = WAIT;
 		endcase

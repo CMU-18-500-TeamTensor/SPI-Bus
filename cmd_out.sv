@@ -11,14 +11,16 @@ module cmd_out (
 	output logic cmd_done,
 	output logic [7:0] byte_send);
 	
-	enum logic [1:0] {WAIT, LOAD, SEND} state, nextState;
+	enum logic [1:0] {WAIT, COUNT, LOAD, SEND} state, nextState;
 	
+	logic [3:0] [7:0] count;
 	logic [3:0] [7:0] buffer;
 	logic [1:0] index_buffer;
 	
 	always_comb
 		case (state)
-		WAIT: nextState = (cmd_send) ? LOAD : WAIT;
+		WAIT: nextState = (cmd_send) ? COUNT : WAIT;
+		COUNT: nextState = (~busy && ~write && (index_buffer == 3)) ? LOAD : COUNT;
 		LOAD: begin
 			if (mem_out.ptr == mem_out.region_end)
 				nextState = WAIT;
@@ -29,12 +31,13 @@ module cmd_out (
 					nextState = LOAD;
 			end
 		end
-		SEND: nextState = (index_buffer == 3) ? LOAD : SEND;
+		SEND: nextState = (~busy && ~write && (index_buffer == 3)) ? LOAD : SEND;
 		endcase
 	
 	always_ff @(posedge clk, negedge rst_L)
 		if (~rst_L) begin
 			state <= WAIT;
+			count <= 0;
 			buffer <= 0;
 			index_buffer <= 0;
 			write <= 0;
@@ -48,15 +51,29 @@ module cmd_out (
 			case (state)
 			WAIT: begin
 				cmd_done <= 1'b0;
-				if (nextState == LOAD) begin
+				if (nextState == COUNT) begin
+					write <= 1'b1;
+					byte_send <= 8'b1;
+					index_buffer <= 0;
 					mem_out.ptr <= mem_out.region_begin;
+					count <= mem_out.region_end - mem_out.region_begin;
+				end
+			end
+			COUNT: begin
+				if (~busy && ~write) begin
+					write <= 1'b1;
+					byte_send <= count[index_buffer];
+					index_buffer <= index_buffer + 1;
+				end
+				if (nextState == LOAD) begin
+					index_buffer <= 0;
 				end
 			end
 			LOAD: begin
 				if (nextState == WAIT)
 					cmd_done <= 1'b1;
 					
-				else if (nextState == LOAD && mem_out.avail)
+				else if (nextState == LOAD && ~mem_out.r_en)
 						mem_out.r_en <= 1'b1;
 						
 				else if (nextState == SEND) begin
@@ -66,7 +83,7 @@ module cmd_out (
 				end
 			end
 			SEND: begin
-				if (~busy & ~write) begin
+				if (~busy && ~write) begin
 					write <= 1'b1;
 					byte_send <= buffer[index_buffer];
 					index_buffer <= index_buffer + 1;

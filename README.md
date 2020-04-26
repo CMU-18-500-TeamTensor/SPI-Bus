@@ -1,1 +1,1 @@
-SPI Bus and buffer
+SPI Bus and Memory interface

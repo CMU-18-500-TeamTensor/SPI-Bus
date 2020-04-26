@@ -25,7 +25,7 @@ module cmd_in (
 		case (state)
 			WAIT: nextState = (valid && (byte_recv == 8'd1)) ? COUNT : WAIT;
 			COUNT: nextState = (valid && (index_word == 3)) ? READ : COUNT;
-			READ: nextState = (valid && (index == cmd_scratch.region_end)) ? WAIT : READ;
+			READ: nextState = (index == cmd_scratch.region_end) ? WAIT : READ;
 			default: nextState = WAIT;
 		endcase
 	
@@ -66,7 +66,7 @@ module cmd_in (
 					index_word <= index_word + 1;
 					if (index_word == 3) begin
 						index <= index + 1;
-						cmd_scratch.data_load <= buffer;
+						cmd_scratch.data_load <= {byte_recv, buffer[2:0]};
 						cmd_scratch.done <= 1'b1;
 					end
 				end

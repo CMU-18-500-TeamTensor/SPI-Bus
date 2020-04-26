@@ -1,5 +1,3 @@
-
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -15,7 +13,7 @@
 
 #define PIN RPI_V2_GPIO_P1_22
 #define PORT    18500 
-#define BUFSIZE 1024
+#define BUFSIZE 1025
 
 /*
  * error - wrapper for perror
@@ -147,56 +145,54 @@ int main(int argc, char **argv) {
     
 		printf("Connection established\n");
 		while (1) {
-    	bzero(buf, BUFSIZE);
-    	n = read(connfd, buf, BUFSIZE-4);
-    	if (n <= 0) 
-				break; 
-			printf("Received: %s (%i)\n", buf, n);
-			
-			// pad input
-			while ((n & 0x3) != 0) {
-				buf[n] = '\0';
-				n++;
-			}
-			printf("After pad: %s (%i)\n", buf, n);
-			uint32_t word_count = n / 4;
-			buf[n] = '\0';
-		  uint32_t verify = 0;
-			uint32_t none = 0;
-			char sink[4];
-      
-			if (loopback) {
-				/* loopback mode */
-				bcm2835_spi_transfernb(buf, sink, 2);
-				if (n-2 > 0) {
-				  bcm2835_spi_transfernb(&buf[2], buf, n-2);
-    	  }
-				bcm2835_spi_transfernb((char *)&none, &buf[n-2], 2);
-				verify = n;
-			} else {
-				/* normal operation */
-				// send enable byte
-				bcm2835_spi_transfer(1);
-        // send 4-byte word_count
-	  		bcm2835_spi_transfernb((char *)&word_count, sink, 4);
-				// send words
-	  		bcm2835_spi_transfern(buf, word_count * 4);
-       
-			  // recv enable byte 
-	  		while (!bcm2835_spi_transfer(0));
-	  	  bzero(buf, 4);
-				// recv 4-byte n
-			  bcm2835_spi_transfernb(buf, (char *)&verify, 4);
-    	  bzero(buf, BUFSIZE);
-				// receive words
-				bcm2835_spi_transfern(buf, verify * 4);
-			}
+    	int msglen, outlen;
+			memset(buf, 0, BUFSIZE);
+    	n = read(connfd, buf, BUFSIZE-1);
+    	
+			if (n <= 0)
+				break;
 
-			printf("Sending: %s (%i)\n", buf, verify * 4);
-	
-    	n = write(connfd, buf, verify * 4);
-    	if (n < 0)
-				break; 
+      msglen = *((uint32_t *)buf);
+
+			printf("Message received: (%d)[%d]%s\n", msglen*4, msglen, buf+4);
+			msglen *= 4;
+		  
+		  // send enable byte
+		  bcm2835_spi_transfer(1);
+
+			// recv loop
+			while (1) {
+			  bcm2835_spi_transfern(buf, n);
+				msglen -= n;
+				if (msglen <= 0)
+					break;
+    	  n = read(connfd, buf, BUFSIZE-1);
+			}
+			
+			// receive enable byte
+			while(!bcm2835_spi_transfer(0));
+			memset(buf, 0, 4);
+			bcm2835_spi_transfernb(buf, (char *)&outlen, 4);
+
+			outlen *= 4;
+
+      int exit = 0;
+			// send loop
+			while (outlen > 0) {
+				int block;
+			  memset(buf, 0, BUFSIZE);
+				if (outlen > BUFSIZE-1)
+					block = BUFSIZE-1;
+				else
+					block = outlen;
+				outlen -= block;
+				bcm2835_spi_transfern(buf, block);
+			  printf("Sending: %s (%i)\n", buf, block);
+        if (write(connfd, buf, block) <= 0)
+					exit = 1;
+			}
+			if (exit)
+				break;
 		}
 		printf("Connection closed\n");
 		close(connfd);
