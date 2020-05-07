@@ -13,7 +13,7 @@
 
 #define PIN RPI_V2_GPIO_P1_22
 #define PORT    18500 
-#define BUFSIZE 1025
+#define BUFSIZE 2049
 
 /*
  * error - wrapper for perror
@@ -154,7 +154,6 @@ int main(int argc, char **argv) {
 
       msglen = *((uint32_t *)buf);
 
-			printf("Message received: (%d)[%d]%s\n", msglen*4, msglen, buf+4);
 			msglen *= 4;
 		  
 		  // send enable byte
@@ -165,7 +164,7 @@ int main(int argc, char **argv) {
 			  bcm2835_spi_transfern(buf, n);
 				msglen -= n;
 				if (msglen <= 0)
-					break;
+				 	break;
     	  n = read(connfd, buf, BUFSIZE-1);
 			}
 			
@@ -176,6 +175,10 @@ int main(int argc, char **argv) {
 
 			outlen *= 4;
 
+			int sendcount = outlen / (BUFSIZE-1);
+      if (outlen % 2048 != 0) sendcount++;
+			printf("Chunking message int %d\n", sendcount);
+			write(connfd, (char *)&sendcount, 4);
       int exit = 0;
 			// send loop
 			while (outlen > 0) {
@@ -188,7 +191,9 @@ int main(int argc, char **argv) {
 				outlen -= block;
 				bcm2835_spi_transfern(buf, block);
 			  printf("Sending: %s (%i)\n", buf, block);
-        if (write(connfd, buf, block) <= 0)
+				n = write(connfd, buf, block);
+        printf("Sent\n");
+        if (n <= 0)
 					exit = 1;
 			}
 			if (exit)

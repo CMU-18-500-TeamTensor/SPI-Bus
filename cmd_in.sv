@@ -10,7 +10,7 @@ module cmd_in (
 	output logic cmd_ready);
 	
 	enum logic [1:0] {WAIT, COUNT, READ} state, nextState;
-	
+
 	logic [3:0][7:0] buffer;
 	logic [31:0] count_next, count_tmp;
 	logic [1:0] index_word;

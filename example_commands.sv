@@ -9,7 +9,7 @@ module example_commands (
 	mem_handle   cmd_out);
 
 	logic [15:0][31:0] buffer;
-	logic [3:0] index;
+	logic [31:0] index;
 	
 	enum logic [1:0] {WAIT, IN, OUT} state, nextState;
 	
@@ -54,12 +54,14 @@ module example_commands (
 				end
 				if (cmd_in.r_en && cmd_in.done) begin
 					cmd_in.r_en <= 1'b0;
-					buffer[index] <= cmd_in.data_load;
+					buffer[index[3:0]] <= cmd_in.data_load;
 					index <= index + 1;
 					// cmd_in.ptr <= cmd_in.ptr + 1; // Unused, see above.
 				end
 				if (nextState == OUT) begin
 					index <= 0;
+					//cmd_out.region_end <= 1;
+					//buffer[0] = 32'h79_61_6B_4F;
 					cmd_out.region_end <= cmd_in.region_end;
 					cmd_out.data_load <= 0;
 					cmd_send <= 1'b1;
@@ -67,7 +69,7 @@ module example_commands (
 			end
 			OUT: begin
 				if (cmd_out.r_en && ~cmd_out.done) begin
-					cmd_out.data_load <= buffer[cmd_out.ptr];
+					cmd_out.data_load <= buffer[cmd_out.ptr[3:0]];
 					cmd_out.done <= 1'b1;
 				end
 			end
